@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c0e13">
+  <meta name="description" content="一个简洁、精致的网页版番茄时钟，支持专注、短休息、长休息、进度环、提示音与本地统计。">
+  <title>番茄时钟</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230c0e13'/%3E%3Ccircle cx='32' cy='34' r='16' fill='none' stroke='%23ff9d5c' stroke-width='4'/%3E%3Cpath d='M32 34V24' stroke='%23ff9d5c' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M25 12h14' stroke='%23ffcf87' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-mode="focus">
+  <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand" aria-label="番茄时钟">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+            <circle cx="12" cy="13.4" r="7.7"></circle>
+            <path d="M12 13.4V9.1"></path>
+            <path d="M12 13.4l3.1 1.9"></path>
+            <path d="M9.3 3.2h5.4"></path>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-name">番茄时钟</span>
+          <span class="brand-sub">专注 · 休息 · 循环</span>
+        </span>
+      </div>
+
+      <button id="soundToggle" class="sound-toggle" type="button" aria-pressed="true" aria-label="关闭提示音">
+        <svg class="icon icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M11 5 6.5 9H3v6h3.5L11 19z"></path>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+          <path d="M18.4 5.6a9 9 0 0 1 0 12.8"></path>
+        </svg>
+        <svg class="icon icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M11 5 6.5 9H3v6h3.5L11 19z"></path>
+          <path d="m16 9 5 6"></path>
+          <path d="m21 9-5 6"></path>
+        </svg>
+        <span class="sound-label">声音开</span>
+      </button>
+    </header>
+
+    <div class="layout">
+      <main class="timer-card" id="timerCard">
+        <div class="mode-tabs" role="group" aria-label="选择计时模式">
+          <button class="mode-tab" type="button" data-mode="focus" aria-pressed="true">
+            专注
+            <span data-duration="focus">25 分</span>
+          </button>
+          <button class="mode-tab" type="button" data-mode="short" aria-pressed="false">
+            短休息
+            <span data-duration="short">5 分</span>
+          </button>
+          <button class="mode-tab" type="button" data-mode="long" aria-pressed="false">
+            长休息
+            <span data-duration="long">15 分</span>
+          </button>
+        </div>
+
+        <div class="timer-stage">
+          <svg class="ring" viewBox="0 0 300 300" aria-hidden="true">
+            <defs>
+              <linearGradient id="ringGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#ff9d5c"></stop>
+                <stop offset="55%" stop-color="#ffcf87"></stop>
+                <stop offset="100%" stop-color="#ff9d5c"></stop>
+              </linearGradient>
+            </defs>
+            <circle class="ring-track" cx="150" cy="150" r="132"></circle>
+            <circle class="ring-progress" id="ringProgress" cx="150" cy="150" r="132"></circle>
+          </svg>
+          <div class="timer-center">
+            <p class="mode-name" id="modeName">专注时间</p>
+            <p class="time-display" id="timeDisplay" aria-hidden="true">25:00</p>
+            <p class="status" id="statusText" aria-live="polite">准备开始</p>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="toggleBtn" class="btn btn-primary" type="button">开始</button>
+          <button id="resetBtn" class="btn btn-ghost" type="button">重置</button>
+        </div>
+
+        <p class="shortcut-hint">快捷键：空格 开始 / 暂停 · R 重置 · 1 / 2 / 3 切换模式</p>
+
+        <div id="completion" class="completion" hidden aria-live="polite">
+          <div class="completion-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m5 12.5 4.4 4.4L19 6.8"></path>
+            </svg>
+          </div>
+          <div class="completion-body">
+            <p class="completion-title" id="completionTitle">专注完成！</p>
+            <p class="completion-text" id="completionText"></p>
+            <p class="completion-note" id="completionNote" hidden></p>
+            <div class="completion-actions">
+              <button id="completionNext" class="btn btn-primary btn-sm" type="button">开始短休息</button>
+              <button id="completionDismiss" class="btn btn-ghost btn-sm" type="button">稍后</button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <aside class="sidebar">
+        <section class="panel stats-card" aria-labelledby="statsTitle">
+          <h2 id="statsTitle" class="panel-title">今日专注</h2>
+          <p class="stat-number">
+            <span id="focusCount">0</span>
+            <span class="stat-unit">个番茄</span>
+          </p>
+          <p class="stat-caption" id="statCaption" aria-live="polite">完成第一个番茄，开始专注吧</p>
+          <p class="storage-warning" id="storageWarning" hidden>当前浏览器禁止本地存储，设置与统计将无法保存。</p>
+        </section>
+
+        <section class="panel settings-card" aria-labelledby="settingsTitle">
+          <h2 id="settingsTitle" class="panel-title">计时设置</h2>
+
+          <label class="setting-row" for="focusMinutes">
+            <span class="setting-label"><span class="dot dot-focus" aria-hidden="true"></span>专注</span>
+            <span class="setting-value">
+              <input class="setting-input" id="focusMinutes" type="number" min="1" max="120" step="1" inputmode="numeric" value="25">
+              <span class="setting-unit">分钟</span>
+            </span>
+          </label>
+
+          <label class="setting-row" for="shortMinutes">
+            <span class="setting-label"><span class="dot dot-short" aria-hidden="true"></span>短休息</span>
+            <span class="setting-value">
+              <input class="setting-input" id="shortMinutes" type="number" min="1" max="120" step="1" inputmode="numeric" value="5">
+              <span class="setting-unit">分钟</span>
+            </span>
+          </label>
+
+          <label class="setting-row" for="longMinutes">
+            <span class="setting-label"><span class="dot dot-long" aria-hidden="true"></span>长休息</span>
+            <span class="setting-value">
+              <input class="setting-input" id="longMinutes" type="number" min="1" max="120" step="1" inputmode="numeric" value="15">
+              <span class="setting-unit">分钟</span>
+            </span>
+          </label>
+
+          <p class="setting-note">调整时长会重置当前计时，范围 1–120 分钟。</p>
+          <p class="setting-note sound-note" id="soundNote" hidden>当前浏览器无法播放提示音，完成时将只显示页面提示。</p>
+
+          <div class="setting-actions">
+            <button id="testSoundBtn" class="mini-btn" type="button">试听提示音</button>
+            <button id="restoreDefaults" class="mini-btn" type="button">恢复默认时长</button>
+          </div>
+        </section>
+
+        <section class="tips" aria-labelledby="tipsTitle">
+          <h2 id="tipsTitle">使用提示</h2>
+          <ul>
+            <li>点击「开始」进入专注，结束后会自动记录今日完成次数。</li>
+            <li>专注结束推荐短休息；连续完成 4 个番茄后，推荐长休息。</li>
+            <li>设置与统计保存在本机浏览器中，刷新或下次打开仍会保留。</li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+
+    <footer class="page-footer">纯静态网页 · 无需联网 · 双击 index.html 即可使用</footer>
+  </div>
+
+  <noscript>
+    <p class="noscript">此番茄时钟需要启用 JavaScript 才能运行。</p>
+  </noscript>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
